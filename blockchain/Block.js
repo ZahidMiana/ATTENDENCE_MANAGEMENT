@@ -3,6 +3,7 @@ const crypto = require('crypto');
 /**
  * Block class represents a single block in the blockchain
  * Contains all mandatory fields: index, timestamp, transactions, prev_hash, nonce, hash
+ * http://localhost:5000
  */
 class Block {
     constructor(index, timestamp, transactions, prev_hash = '') {
@@ -18,6 +19,7 @@ class Block {
      * Calculate SHA-256 hash of the block
      * Hash includes: timestamp, transactions, prev_hash, and nonce
      */
+
     calculateHash() {
         const data = this.index + 
                      this.timestamp + 
@@ -40,7 +42,10 @@ class Block {
             this.hash = this.calculateHash();
         }
         
-        console.log(`Block mined: ${this.hash} (nonce: ${this.nonce})`);
+        // Only log in development, not in serverless
+        if (!process.env.VERCEL) {
+            console.log(`Block mined: ${this.hash} (nonce: ${this.nonce})`);
+        }
     }
 }
 

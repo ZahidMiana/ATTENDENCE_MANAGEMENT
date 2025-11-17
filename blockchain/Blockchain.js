@@ -6,7 +6,8 @@ const Block = require('./Block');
 class Blockchain {
     constructor(chainName = 'Generic Chain') {
         this.chain = [];
-        this.difficulty = 4; // Hash must start with "0000"
+        // Reduce difficulty for serverless environments
+        this.difficulty = process.env.VERCEL ? 1 : 4; // "0" vs "0000"
         this.chainName = chainName;
     }   
 

@@ -22,24 +22,56 @@ if (process.env.NODE_ENV === 'production') {
 
 // Initialize Blockchain Manager (lazy initialization for serverless)
 let blockchainManager = null;
+let isInitialized = false;
 
 function getBlockchainManager() {
     if (!blockchainManager) {
+        if (!process.env.VERCEL) console.log('Creating blockchain manager...');
         blockchainManager = new BlockchainManager();
+        if (!process.env.VERCEL) console.log('Blockchain manager created successfully');
     }
     return blockchainManager;
 }
 
+function ensureInitialized() {
+    try {
+        const manager = getBlockchainManager();
+        if (!isInitialized) {
+            if (!process.env.VERCEL) console.log('Initializing blockchain data...');
+            initializeMinimalData();
+            isInitialized = true;
+            if (!process.env.VERCEL) console.log('Blockchain data initialized');
+        }
+        return manager;
+    } catch (error) {
+        console.error('Error in ensureInitialized:', error);
+        throw error;
+    }
+}
+
 // ==================== TEST ENDPOINTS ====================
 /**
- * GET /api - Test API endpoint
+ * GET /api - Test API endpoint (no blockchain operations)
  */
 app.get('/api', (req, res) => {
     res.json({
         success: true,
         message: 'Blockchain Attendance API is running!',
         timestamp: new Date().toISOString(),
-        env: process.env.NODE_ENV || 'development'
+        env: process.env.NODE_ENV || 'development',
+        serverless: process.env.VERCEL ? true : false
+    });
+});
+
+/**
+ * GET /api/health - Health check endpoint (super lightweight)
+ */
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        memory: process.memoryUsage(),
+        uptime: process.uptime()
     });
 });
 
@@ -50,7 +82,7 @@ app.get('/api', (req, res) => {
  */
 app.get('/api/departments', (req, res) => {
     try {
-        const departments = getBlockchainManager().getAllDepartments();
+        const departments = ensureInitialized().getAllDepartments();
         res.json({
             success: true,
             data: departments,
@@ -803,13 +835,14 @@ app.get('/api/students/:id/hierarchy', (req, res) => {
  */
 app.get('/api/system/info', (req, res) => {
     try {
+        const manager = ensureInitialized();
         const stats = {
-            totalDepartments: getBlockchainManager().getAllDepartments().length,
-            totalClasses: getBlockchainManager().getAllClasses().length,
-            totalStudents: getBlockchainManager().getAllStudents().length,
-            activeDepartments: getBlockchainManager().getAllDepartments().filter(d => d.status === 'active').length,
-            activeClasses: getBlockchainManager().getAllClasses().filter(c => c.status === 'active').length,
-            activeStudents: getBlockchainManager().getAllStudents().filter(s => s.status === 'active').length
+            totalDepartments: manager.getAllDepartments().length,
+            totalClasses: manager.getAllClasses().length,
+            totalStudents: manager.getAllStudents().length,
+            activeDepartments: manager.getAllDepartments().filter(d => d.status === 'active').length,
+            activeClasses: manager.getAllClasses().filter(c => c.status === 'active').length,
+            activeStudents: manager.getAllStudents().filter(s => s.status === 'active').length
         };
 
         res.json({
@@ -855,24 +888,17 @@ app.post('/api/system/initialize', (req, res) => {
 function initializeMinimalData() {
     const manager = getBlockchainManager();
     
-    // Create just 2 departments with minimal data
+    // Create minimal data for serverless - just 1 of each
     try {
-        manager.createDepartment('DEPT001', 'School of Computing');
-        manager.createDepartment('DEPT002', 'School of Software Engineering');
-        
-        // Create 2 classes per department (4 total)
-        manager.createClass('DEPT001_CLASS1', 'Computing 1', 'DEPT001');
-        manager.createClass('DEPT002_CLASS1', 'Software 1', 'DEPT002');
-        
-        // Create 2 students per class (4 total students)
-        manager.createStudent('001101', 'Student 001101', 'DEPT001_CLASS1');
-        manager.createStudent('001102', 'Student 001102', 'DEPT001_CLASS1');
-        manager.createStudent('002101', 'Student 002101', 'DEPT002_CLASS1');
-        manager.createStudent('002102', 'Student 002102', 'DEPT002_CLASS1');
-        
-        console.log('Minimal data initialization complete - 2 departments, 2 classes, 4 students');
+        // Only create if doesn't exist
+        if (Object.keys(manager.getAllDepartments()).length === 0) {
+            manager.createDepartment('DEPT001', 'Computing');
+            const classChain = manager.createClass('CLASS001', 'Sample Class', 'DEPT001');
+            manager.createStudent('STU001', 'Sample Student', 'CLASS001');
+            if (!process.env.VERCEL) console.log('Minimal data initialized: 1 dept, 1 class, 1 student');
+        }
     } catch (error) {
-        console.log('Minimal initialization skipped - data may already exist');
+        if (!process.env.VERCEL) console.log('Minimal initialization error:', error.message);
     }
 }
 
@@ -965,14 +991,7 @@ if (require.main === module) {
     app.listen(PORT, () => {
         console.log(`Server is running on port ${PORT}`);
         console.log(`API available at http://localhost:${PORT}`);
-        console.log('\nInitializing system with default data...');
-        
-        // Auto-initialize on first run
-        try {
-            initializeDefaultData();
-        } catch (error) {
-            console.log('Data already initialized or error occurred');
-        }
+        console.log('\nBlockchain system ready - data will be initialized on first API call');
     });
 }
 

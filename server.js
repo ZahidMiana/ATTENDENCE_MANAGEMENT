@@ -20,8 +20,15 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'client/dist')));
 }
 
-// Initialize Blockchain Manager
-const blockchainManager = new BlockchainManager();
+// Initialize Blockchain Manager (lazy initialization for serverless)
+let blockchainManager = null;
+
+function getBlockchainManager() {
+    if (!blockchainManager) {
+        blockchainManager = new BlockchainManager();
+    }
+    return blockchainManager;
+}
 
 // ==================== TEST ENDPOINTS ====================
 /**
@@ -43,7 +50,7 @@ app.get('/api', (req, res) => {
  */
 app.get('/api/departments', (req, res) => {
     try {
-        const departments = blockchainManager.getAllDepartments();
+        const departments = getBlockchainManager().getAllDepartments();
         res.json({
             success: true,
             data: departments,
@@ -62,7 +69,7 @@ app.get('/api/departments', (req, res) => {
  */
 app.get('/api/departments/:id', (req, res) => {
     try {
-        const dept = blockchainManager.getDepartment(req.params.id);
+        const dept = getBlockchainManager().getDepartment(req.params.id);
         if (!dept) {
             return res.status(404).json({
                 success: false,
@@ -99,7 +106,7 @@ app.post('/api/departments', (req, res) => {
             });
         }
 
-        const dept = blockchainManager.createDepartment(
+        const dept = getBlockchainManager().createDepartment(
             departmentId,
             departmentName,
             additionalData || {}
@@ -127,7 +134,7 @@ app.post('/api/departments', (req, res) => {
  */
 app.put('/api/departments/:id', (req, res) => {
     try {
-        const block = blockchainManager.updateDepartment(
+        const block = getBlockchainManager().updateDepartment(
             req.params.id,
             req.body
         );
@@ -154,7 +161,7 @@ app.put('/api/departments/:id', (req, res) => {
  */
 app.delete('/api/departments/:id', (req, res) => {
     try {
-        const block = blockchainManager.deleteDepartment(req.params.id);
+        const block = getBlockchainManager().deleteDepartment(req.params.id);
 
         res.json({
             success: true,
@@ -178,7 +185,7 @@ app.delete('/api/departments/:id', (req, res) => {
  */
 app.get('/api/departments/search/:term', (req, res) => {
     try {
-        const results = blockchainManager.searchDepartments(req.params.term);
+        const results = getBlockchainManager().searchDepartments(req.params.term);
         res.json({
             success: true,
             data: results,
@@ -199,7 +206,7 @@ app.get('/api/departments/search/:term', (req, res) => {
  */
 app.get('/api/classes', (req, res) => {
     try {
-        const classes = blockchainManager.getAllClasses();
+        const classes = getBlockchainManager().getAllClasses();
         res.json({
             success: true,
             data: classes,
@@ -218,7 +225,7 @@ app.get('/api/classes', (req, res) => {
  */
 app.get('/api/classes/:id', (req, res) => {
     try {
-        const classChain = blockchainManager.getClass(req.params.id);
+        const classChain = getBlockchainManager().getClass(req.params.id);
         if (!classChain) {
             return res.status(404).json({
                 success: false,
@@ -246,7 +253,7 @@ app.get('/api/classes/:id', (req, res) => {
  */
 app.get('/api/departments/:deptId/classes', (req, res) => {
     try {
-        const classes = blockchainManager.getClassesByDepartment(req.params.deptId);
+        const classes = getBlockchainManager().getClassesByDepartment(req.params.deptId);
         res.json({
             success: true,
             data: classes,
@@ -274,7 +281,7 @@ app.post('/api/classes', (req, res) => {
             });
         }
 
-        const classChain = blockchainManager.createClass(
+        const classChain = getBlockchainManager().createClass(
             classId,
             className,
             departmentId,
@@ -304,7 +311,7 @@ app.post('/api/classes', (req, res) => {
  */
 app.put('/api/classes/:id', (req, res) => {
     try {
-        const block = blockchainManager.updateClass(req.params.id, req.body);
+        const block = getBlockchainManager().updateClass(req.params.id, req.body);
 
         res.json({
             success: true,
@@ -328,7 +335,7 @@ app.put('/api/classes/:id', (req, res) => {
  */
 app.delete('/api/classes/:id', (req, res) => {
     try {
-        const block = blockchainManager.deleteClass(req.params.id);
+        const block = getBlockchainManager().deleteClass(req.params.id);
 
         res.json({
             success: true,
@@ -352,7 +359,7 @@ app.delete('/api/classes/:id', (req, res) => {
  */
 app.get('/api/classes/search/:term', (req, res) => {
     try {
-        const results = blockchainManager.searchClasses(req.params.term);
+        const results = getBlockchainManager().searchClasses(req.params.term);
         res.json({
             success: true,
             data: results,
@@ -373,7 +380,7 @@ app.get('/api/classes/search/:term', (req, res) => {
  */
 app.get('/api/students', (req, res) => {
     try {
-        const students = blockchainManager.getAllStudents();
+        const students = getBlockchainManager().getAllStudents();
         res.json({
             success: true,
             data: students,
@@ -392,7 +399,7 @@ app.get('/api/students', (req, res) => {
  */
 app.get('/api/students/:id', (req, res) => {
     try {
-        const student = blockchainManager.getStudent(req.params.id);
+        const student = getBlockchainManager().getStudent(req.params.id);
         if (!student) {
             return res.status(404).json({
                 success: false,
@@ -421,7 +428,7 @@ app.get('/api/students/:id', (req, res) => {
  */
 app.get('/api/classes/:classId/students', (req, res) => {
     try {
-        const students = blockchainManager.getStudentsByClass(req.params.classId);
+        const students = getBlockchainManager().getStudentsByClass(req.params.classId);
         res.json({
             success: true,
             data: students,
@@ -440,7 +447,7 @@ app.get('/api/classes/:classId/students', (req, res) => {
  */
 app.get('/api/departments/:deptId/students', (req, res) => {
     try {
-        const students = blockchainManager.getStudentsByDepartment(req.params.deptId);
+        const students = getBlockchainManager().getStudentsByDepartment(req.params.deptId);
         res.json({
             success: true,
             data: students,
@@ -468,7 +475,7 @@ app.post('/api/students', (req, res) => {
             });
         }
 
-        const student = blockchainManager.createStudent(
+        const student = getBlockchainManager().createStudent(
             studentId,
             studentName,
             rollNumber,
@@ -502,7 +509,7 @@ app.post('/api/students', (req, res) => {
  */
 app.put('/api/students/:id', (req, res) => {
     try {
-        const block = blockchainManager.updateStudent(req.params.id, req.body);
+        const block = getBlockchainManager().updateStudent(req.params.id, req.body);
 
         res.json({
             success: true,
@@ -526,7 +533,7 @@ app.put('/api/students/:id', (req, res) => {
  */
 app.delete('/api/students/:id', (req, res) => {
     try {
-        const block = blockchainManager.deleteStudent(req.params.id);
+        const block = getBlockchainManager().deleteStudent(req.params.id);
 
         res.json({
             success: true,
@@ -550,7 +557,7 @@ app.delete('/api/students/:id', (req, res) => {
  */
 app.get('/api/students/search/:term', (req, res) => {
     try {
-        const results = blockchainManager.searchStudents(req.params.term);
+        const results = getBlockchainManager().searchStudents(req.params.term);
         res.json({
             success: true,
             data: results,
@@ -580,7 +587,7 @@ app.post('/api/attendance/mark', (req, res) => {
             });
         }
 
-        const block = blockchainManager.markAttendance(
+        const block = getBlockchainManager().markAttendance(
             studentId,
             status,
             date,
@@ -625,7 +632,7 @@ app.post('/api/attendance/mark-bulk', (req, res) => {
 
         for (const record of attendanceRecords) {
             try {
-                const block = blockchainManager.markAttendance(
+                const block = getBlockchainManager().markAttendance(
                     record.studentId,
                     record.status,
                     record.date,
@@ -663,8 +670,8 @@ app.post('/api/attendance/mark-bulk', (req, res) => {
  */
 app.get('/api/students/:id/attendance', (req, res) => {
     try {
-        const history = blockchainManager.getStudentAttendanceHistory(req.params.id);
-        const student = blockchainManager.getStudent(req.params.id);
+        const history = getBlockchainManager().getStudentAttendanceHistory(req.params.id);
+        const student = getBlockchainManager().getStudent(req.params.id);
 
         res.json({
             success: true,
@@ -687,7 +694,7 @@ app.get('/api/students/:id/attendance', (req, res) => {
  */
 app.get('/api/classes/:classId/attendance/:date', (req, res) => {
     try {
-        const attendance = blockchainManager.getClassAttendanceByDate(
+        const attendance = getBlockchainManager().getClassAttendanceByDate(
             req.params.classId,
             req.params.date
         );
@@ -711,7 +718,7 @@ app.get('/api/classes/:classId/attendance/:date', (req, res) => {
  */
 app.get('/api/departments/:deptId/attendance/:date', (req, res) => {
     try {
-        const attendance = blockchainManager.getDepartmentAttendanceByDate(
+        const attendance = getBlockchainManager().getDepartmentAttendanceByDate(
             req.params.deptId,
             req.params.date
         );
@@ -737,7 +744,7 @@ app.get('/api/departments/:deptId/attendance/:date', (req, res) => {
  */
 app.get('/api/blockchain/validate', (req, res) => {
     try {
-        const report = blockchainManager.getValidationReport();
+        const report = getBlockchainManager().getValidationReport();
 
         res.json({
             success: true,
@@ -756,7 +763,7 @@ app.get('/api/blockchain/validate', (req, res) => {
  */
 app.get('/api/students/:id/blockchain', (req, res) => {
     try {
-        const details = blockchainManager.getStudentBlockchainDetails(req.params.id);
+        const details = getBlockchainManager().getStudentBlockchainDetails(req.params.id);
 
         res.json({
             success: true,
@@ -775,7 +782,7 @@ app.get('/api/students/:id/blockchain', (req, res) => {
  */
 app.get('/api/students/:id/hierarchy', (req, res) => {
     try {
-        const hierarchy = blockchainManager.getStudentHierarchy(req.params.id);
+        const hierarchy = getBlockchainManager().getStudentHierarchy(req.params.id);
 
         res.json({
             success: true,
@@ -797,12 +804,12 @@ app.get('/api/students/:id/hierarchy', (req, res) => {
 app.get('/api/system/info', (req, res) => {
     try {
         const stats = {
-            totalDepartments: blockchainManager.getAllDepartments().length,
-            totalClasses: blockchainManager.getAllClasses().length,
-            totalStudents: blockchainManager.getAllStudents().length,
-            activeDepartments: blockchainManager.getAllDepartments().filter(d => d.status === 'active').length,
-            activeClasses: blockchainManager.getAllClasses().filter(c => c.status === 'active').length,
-            activeStudents: blockchainManager.getAllStudents().filter(s => s.status === 'active').length
+            totalDepartments: getBlockchainManager().getAllDepartments().length,
+            totalClasses: getBlockchainManager().getAllClasses().length,
+            totalStudents: getBlockchainManager().getAllStudents().length,
+            activeDepartments: getBlockchainManager().getAllDepartments().filter(d => d.status === 'active').length,
+            activeClasses: getBlockchainManager().getAllClasses().filter(c => c.status === 'active').length,
+            activeStudents: getBlockchainManager().getAllStudents().filter(s => s.status === 'active').length
         };
 
         res.json({
@@ -830,9 +837,9 @@ app.post('/api/system/initialize', (req, res) => {
             success: true,
             message: 'System initialized with default data',
             stats: {
-                departments: blockchainManager.getAllDepartments().length,
-                classes: blockchainManager.getAllClasses().length,
-                students: blockchainManager.getAllStudents().length
+                departments: getBlockchainManager().getAllDepartments().length,
+                classes: getBlockchainManager().getAllClasses().length,
+                students: getBlockchainManager().getAllStudents().length
             }
         });
     } catch (error) {
@@ -843,10 +850,41 @@ app.post('/api/system/initialize', (req, res) => {
     }
 });
 
-// ==================== INITIALIZATION FUNCTION ====================
+// ==================== INITIALIZATION FUNCTIONS ====================
+
+function initializeMinimalData() {
+    const manager = getBlockchainManager();
+    
+    // Create just 2 departments with minimal data
+    try {
+        manager.createDepartment('DEPT001', 'School of Computing');
+        manager.createDepartment('DEPT002', 'School of Software Engineering');
+        
+        // Create 2 classes per department (4 total)
+        manager.createClass('DEPT001_CLASS1', 'Computing 1', 'DEPT001');
+        manager.createClass('DEPT002_CLASS1', 'Software 1', 'DEPT002');
+        
+        // Create 2 students per class (4 total students)
+        manager.createStudent('001101', 'Student 001101', 'DEPT001_CLASS1');
+        manager.createStudent('001102', 'Student 001102', 'DEPT001_CLASS1');
+        manager.createStudent('002101', 'Student 002101', 'DEPT002_CLASS1');
+        manager.createStudent('002102', 'Student 002102', 'DEPT002_CLASS1');
+        
+        console.log('Minimal data initialization complete - 2 departments, 2 classes, 4 students');
+    } catch (error) {
+        console.log('Minimal initialization skipped - data may already exist');
+    }
+}
 
 function initializeDefaultData() {
     console.log('Initializing default data...');
+    
+    // Skip heavy initialization in serverless environment
+    if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+        console.log('Serverless environment detected - using minimal initialization');
+        initializeMinimalData();
+        return;
+    }
 
     // Create 2 departments
     const departments = [
@@ -856,7 +894,7 @@ function initializeDefaultData() {
 
     departments.forEach(dept => {
         try {
-            blockchainManager.createDepartment(dept.id, dept.name);
+            getBlockchainManager().createDepartment(dept.id, dept.name);
         } catch (error) {
             console.log(`Department ${dept.id} already exists`);
         }
@@ -869,7 +907,7 @@ function initializeDefaultData() {
             const className = `${dept.name.split(' ')[2] || 'Class'} ${i}`;
             
             try {
-                blockchainManager.createClass(classId, className, dept.id);
+                getBlockchainManager().createClass(classId, className, dept.id);
             } catch (error) {
                 console.log(`Class ${classId} already exists`);
             }
@@ -887,7 +925,7 @@ function initializeDefaultData() {
                 const studentName = `Student ${rollNumber}`;
                 
                 try {
-                    blockchainManager.createStudent(
+                    getBlockchainManager().createStudent(
                         studentId,
                         studentName,
                         rollNumber,
@@ -922,18 +960,21 @@ app.get('/', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`API available at http://localhost:${PORT}`);
-    console.log('\nInitializing system with default data...');
-    
-    // Auto-initialize on first run
-    try {
-        initializeDefaultData();
-    } catch (error) {
-        console.log('Data already initialized or error occurred');
-    }
-});
+// Only start server in non-serverless environments
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+        console.log(`API available at http://localhost:${PORT}`);
+        console.log('\nInitializing system with default data...');
+        
+        // Auto-initialize on first run
+        try {
+            initializeDefaultData();
+        } catch (error) {
+            console.log('Data already initialized or error occurred');
+        }
+    });
+}
 
 // Catch-all handler: send back the React app in production
 if (process.env.NODE_ENV === 'production') {
@@ -942,4 +983,5 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-module.exports = { app, blockchainManager };
+// Export the app for Vercel
+module.exports = app;

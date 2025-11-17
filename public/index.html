@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Attendance Management System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔗 Blockchain-Based Attendance Management System</h1>
+            <p class="subtitle">Multi-Layer Hierarchical Blockchain</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" onclick="showTab('dashboard')">Dashboard</button>
+            <button class="tab-btn" onclick="showTab('departments')">Departments</button>
+            <button class="tab-btn" onclick="showTab('classes')">Classes</button>
+            <button class="tab-btn" onclick="showTab('students')">Students</button>
+            <button class="tab-btn" onclick="showTab('attendance')">Attendance</button>
+            <button class="tab-btn" onclick="showTab('blockchain')">Blockchain View</button>
+            <button class="tab-btn" onclick="showTab('validation')">Validation</button>
+        </nav>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <h2>System Dashboard</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Departments</h3>
+                    <p class="stat-number" id="stat-departments">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Classes</h3>
+                    <p class="stat-number" id="stat-classes">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Students</h3>
+                    <p class="stat-number" id="stat-students">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Blockchain Status</h3>
+                    <p class="stat-number" id="stat-blockchain">-</p>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button onclick="loadSystemInfo()" class="btn btn-primary">Refresh Stats</button>
+                <button onclick="initializeSystem()" class="btn btn-secondary">Initialize System</button>
+            </div>
+        </div>
+
+        <!-- Departments Tab -->
+        <div id="departments" class="tab-content">
+            <h2>Department Management</h2>
+            
+            <div class="form-section">
+                <h3>Add New Department</h3>
+                <form id="addDepartmentForm">
+                    <input type="text" id="dept-id" placeholder="Department ID" required>
+                    <input type="text" id="dept-name" placeholder="Department Name" required>
+                    <button type="submit" class="btn btn-primary">Add Department</button>
+                </form>
+            </div>
+
+            <div class="search-section">
+                <input type="text" id="dept-search" placeholder="Search departments...">
+                <button onclick="searchDepartments()" class="btn btn-secondary">Search</button>
+                <button onclick="loadDepartments()" class="btn btn-secondary">Show All</button>
+            </div>
+
+            <div id="departments-list" class="data-list"></div>
+        </div>
+
+        <!-- Classes Tab -->
+        <div id="classes" class="tab-content">
+            <h2>Class Management</h2>
+            
+            <div class="form-section">
+                <h3>Add New Class</h3>
+                <form id="addClassForm">
+                    <input type="text" id="class-id" placeholder="Class ID" required>
+                    <input type="text" id="class-name" placeholder="Class Name" required>
+                    <select id="class-dept" required>
+                        <option value="">Select Department</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary">Add Class</button>
+                </form>
+            </div>
+
+            <div class="search-section">
+                <input type="text" id="class-search" placeholder="Search classes...">
+                <button onclick="searchClasses()" class="btn btn-secondary">Search</button>
+                <button onclick="loadClasses()" class="btn btn-secondary">Show All</button>
+            </div>
+
+            <div id="classes-list" class="data-list"></div>
+        </div>
+
+        <!-- Students Tab -->
+        <div id="students" class="tab-content">
+            <h2>Student Management</h2>
+            
+            <div class="form-section">
+                <h3>Add New Student</h3>
+                <form id="addStudentForm">
+                    <input type="text" id="student-id" placeholder="Student ID" required>
+                    <input type="text" id="student-name" placeholder="Student Name" required>
+                    <input type="text" id="student-roll" placeholder="Roll Number" required>
+                    <select id="student-dept" onchange="loadClassesForStudent()" required>
+                        <option value="">Select Department</option>
+                    </select>
+                    <select id="student-class" required>
+                        <option value="">Select Class</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary">Add Student</button>
+                </form>
+            </div>
+
+            <div class="search-section">
+                <input type="text" id="student-search" placeholder="Search students...">
+                <button onclick="searchStudents()" class="btn btn-secondary">Search</button>
+                <button onclick="loadStudents()" class="btn btn-secondary">Show All</button>
+            </div>
+
+            <div id="students-list" class="data-list"></div>
+        </div>
+
+        <!-- Attendance Tab -->
+        <div id="attendance" class="tab-content">
+            <h2>Attendance Management</h2>
+            
+            <div class="form-section">
+                <h3>Mark Attendance</h3>
+                <div class="attendance-controls">
+                    <select id="attendance-dept" onchange="loadClassesForAttendance()">
+                        <option value="">Select Department</option>
+                    </select>
+                    <select id="attendance-class" onchange="loadStudentsForAttendance()">
+                        <option value="">Select Class</option>
+                    </select>
+                    <input type="date" id="attendance-date" required>
+                    <button onclick="loadStudentsForAttendance()" class="btn btn-secondary">Load Students</button>
+                </div>
+            </div>
+
+            <div id="attendance-marking" class="attendance-table"></div>
+        </div>
+
+        <!-- Blockchain View Tab -->
+        <div id="blockchain" class="tab-content">
+            <h2>Blockchain Visualization</h2>
+            
+            <div class="form-section">
+                <h3>View Student Blockchain</h3>
+                <select id="blockchain-student">
+                    <option value="">Select Student</option>
+                </select>
+                <button onclick="viewStudentBlockchain()" class="btn btn-primary">View Blockchain</button>
+            </div>
+
+            <div id="blockchain-view" class="blockchain-container"></div>
+        </div>
+
+        <!-- Validation Tab -->
+        <div id="validation" class="tab-content">
+            <h2>Blockchain Validation</h2>
+            
+            <div class="action-buttons">
+                <button onclick="validateBlockchain()" class="btn btn-primary">Validate Entire System</button>
+            </div>
+
+            <div id="validation-results" class="validation-container"></div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

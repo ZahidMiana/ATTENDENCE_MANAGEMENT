@@ -1,0 +1,417 @@
+import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import { ArrowLeft, Database, Plus, Search, Blocks } from 'lucide-react';
+import { pageTransition, fadeInUp, staggerContainer, staggerItem } from '../lib/animations';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+
+interface Department {
+  _id: string;
+  departmentId: string;
+  name: string;
+  classes: any[];
+}
+
+export default function Departments() {
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/departments');
+      const data = await response.json();
+      if (data.success) {
+        setDepartments(data.data);
+      }
+    } catch (error) {
+      toast.error('Failed to load departments');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredDepartments = departments.filter(dept =>
+    dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    dept.departmentId.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <motion.div
+      className="min-h-screen p-8"
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={pageTransition}
+    >
+      <div className="container mx-auto">
+        <Link to="/">
+          <motion.button
+            className="glass-card px-4 py-2 rounded-lg mb-8 flex items-center gap-2"
+            whileHover={{ scale: 1.05, x: -5 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </motion.button>
+        </Link>
+
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <Database className="w-12 h-12 text-neon-cyan" />
+            <h1 className="text-5xl font-heading font-bold text-gradient">
+              Departments
+            </h1>
+          </div>
+          <motion.button 
+            className="cyber-button flex items-center gap-2"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Plus className="w-5 h-5" />
+            Add Department
+          </motion.button>
+        </div>
+
+        {/* Search Bar */}
+        <motion.div 
+          className="glass-card p-4 mb-6 rounded-2xl"
+          variants={fadeInUp}
+        >
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search departments by name or code..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="cyber-input pl-12"
+            />
+          </div>
+        </motion.div>
+
+        {/* Stats Overview */}
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+          variants={staggerContainer}
+        >
+          <motion.div className="glass-card p-6 rounded-2xl" variants={staggerItem}>
+            <div className="text-neon-cyan text-3xl font-bold">{departments.length}</div>
+            <div className="text-gray-400 mt-2">Total Departments</div>
+          </motion.div>
+          <motion.div className="glass-card p-6 rounded-2xl" variants={staggerItem}>
+            <div className="text-neon-purple text-3xl font-bold">
+              {departments.reduce((sum, dept) => sum + dept.classes.length, 0)}
+            </div>
+            <div className="text-gray-400 mt-2">Total Classes</div>
+          </motion.div>
+          <motion.div className="glass-card p-6 rounded-2xl" variants={staggerItem}>
+            <div className="text-neon-green text-3xl font-bold">
+              {departments.length > 0 ? Math.round(departments.reduce((sum, dept) => sum + dept.classes.length, 0) / departments.length) : 0}
+            </div>
+            <div className="text-gray-400 mt-2">Avg Classes per Dept</div>
+          </motion.div>
+        </motion.div>
+
+        {/* Department Grid */}
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+          variants={staggerContainer}
+        >
+          {loading ? (
+            <div className="col-span-full text-center text-gray-400 py-12">
+              <div className="animate-spin w-12 h-12 border-4 border-neon-cyan border-t-transparent rounded-full mx-auto mb-4"></div>
+              Loading departments...
+            </div>
+          ) : filteredDepartments.length === 0 ? (
+            <div className="col-span-full text-center text-gray-400 py-12 glass-card rounded-2xl">
+              No departments found
+            </div>
+          ) : (
+            filteredDepartments.map((dept, index) => (
+              <motion.div
+                key={dept._id}
+                className="glass-card p-6 rounded-2xl hover:scale-[1.02] transition-all cursor-pointer group"
+                variants={staggerItem}
+                whileHover={{ y: -5 }}
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-neon-cyan group-hover:text-neon-purple transition-colors">
+                      {dept.name}
+                    </h3>
+                    <p className="text-sm text-gray-400 font-mono mt-1">{dept.departmentId}</p>
+                  </div>
+                  <div className="status-orb-valid"></div>
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <div className="text-2xl font-bold text-neon-purple">{dept.classes.length}</div>
+                    <div className="text-xs text-gray-400">Classes</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-neon-green">
+                      {dept.classes.reduce((sum: number, cls: any) => sum + (cls.students?.length || 0), 0)}
+                    </div>
+                    <div className="text-xs text-gray-400">Students</div>
+                  </div>
+                </div>
+
+                {/* Blockchain Info */}
+                <div className="pt-4 border-t border-white/10">
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <Blocks className="w-4 h-4 text-neon-cyan" />
+                    <span className="font-mono text-xs">Chain: {dept.classes.length + 1} blocks</span>
+                  </div>
+                </div>
+
+                {/* Action Button */}
+                <motion.button
+                  className="w-full mt-4 py-2 bg-gradient-to-r from-neon-cyan/10 to-neon-purple/10 rounded-lg text-neon-cyan hover:from-neon-cyan/20 hover:to-neon-purple/20 transition-all border border-neon-cyan/20"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  View Details →
+                </motion.button>
+              </motion.div>
+            ))
+          )}
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+}
+
+interface Department {
+  id: string;
+  name: string;
+  code: string;
+  classCount: number;
+  studentCount: number;
+}
+
+interface GraphNode {
+  id: string;
+  name: string;
+  type: 'department' | 'class' | 'student';
+  val: number;
+  color: string;
+}
+
+interface GraphLink {
+  source: string;
+  target: string;
+}
+
+export default function Departments() {
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const graphRef = useRef<any>();
+
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await api.getDepartments();
+      if (response.success && response.data) {
+        setDepartments(response.data);
+      }
+    } catch (error) {
+      toast.error('Failed to load departments');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Generate graph data
+  const graphData = {
+    nodes: [
+      // Department nodes
+      ...departments.map(dept => ({
+        id: dept.id,
+        name: dept.name,
+        type: 'department' as const,
+        val: 30,
+        color: '#00f5ff'
+      })),
+      // Mock class nodes (you can fetch real data)
+      ...departments.flatMap(dept => 
+        Array.from({ length: Math.min(dept.classCount, 3) }, (_, i) => ({
+          id: `${dept.id}-class-${i}`,
+          name: `Class ${i + 1}`,
+          type: 'class' as const,
+          val: 15,
+          color: '#bf40bf'
+        }))
+      )
+    ],
+    links: [
+      // Links from departments to classes
+      ...departments.flatMap(dept =>
+        Array.from({ length: Math.min(dept.classCount, 3) }, (_, i) => ({
+          source: dept.id,
+          target: `${dept.id}-class-${i}`
+        }))
+      )
+    ]
+  };
+
+  const filteredDepartments = departments.filter(dept =>
+    dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    dept.code.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <motion.div
+      className="min-h-screen p-8"
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={pageTransition}
+    >
+      <div className="container mx-auto">
+        <Link to="/">
+          <motion.button
+            className="glass-card px-4 py-2 rounded-lg mb-8 flex items-center gap-2"
+            whileHover={{ scale: 1.05, x: -5 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </motion.button>
+        </Link>
+
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <Database className="w-12 h-12 text-neon-cyan" />
+            <h1 className="text-5xl font-heading font-bold text-gradient">
+              Departments
+            </h1>
+          </div>
+          <button className="cyber-button flex items-center gap-2">
+            <Plus className="w-5 h-5" />
+            Add Department
+          </button>
+        </div>
+
+        {/* Search Bar */}
+        <motion.div 
+          className="glass-card p-4 mb-6 rounded-2xl"
+          variants={fadeInUp}
+        >
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search departments..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="cyber-input pl-12"
+            />
+          </div>
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Force-Directed Graph Visualization */}
+          <motion.div 
+            className="glass-card p-6 rounded-2xl"
+            variants={fadeInUp}
+          >
+            <h2 className="text-2xl font-bold text-neon-cyan mb-4">
+              Network Visualization
+            </h2>
+            <div className="bg-cyber-dark rounded-lg overflow-hidden" style={{ height: '500px' }}>
+              {!loading && (
+                <ForceGraph2D
+                  ref={graphRef}
+                  graphData={graphData}
+                  nodeLabel="name"
+                  nodeColor={node => (node as GraphNode).color}
+                  nodeVal={node => (node as GraphNode).val}
+                  linkColor={() => 'rgba(255, 255, 255, 0.2)'}
+                  linkWidth={2}
+                  linkDirectionalParticles={2}
+                  linkDirectionalParticleSpeed={0.005}
+                  linkDirectionalParticleWidth={2}
+                  backgroundColor="#0a0a0f"
+                  nodeCanvasObject={(node: any, ctx, globalScale) => {
+                    const label = node.name;
+                    const fontSize = 12 / globalScale;
+                    ctx.font = `${fontSize}px Inter`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = node.color;
+                    ctx.fillText(label, node.x, node.y + node.val / 2 + 5);
+                  }}
+                  onNodeClick={(node) => {
+                    const graphNode = node as GraphNode;
+                    if (graphNode.type === 'department') {
+                      toast.success(`Viewing ${graphNode.name}`);
+                    }
+                  }}
+                />
+              )}
+            </div>
+          </motion.div>
+
+          {/* Department List */}
+          <motion.div 
+            className="glass-card p-6 rounded-2xl"
+            variants={fadeInUp}
+          >
+            <h2 className="text-2xl font-bold text-neon-purple mb-4">
+              Departments ({filteredDepartments.length})
+            </h2>
+            <div className="space-y-4 max-h-[500px] overflow-y-auto scrollbar-cyber">
+              {loading ? (
+                <div className="text-center text-gray-400 py-8">Loading...</div>
+              ) : filteredDepartments.length === 0 ? (
+                <div className="text-center text-gray-400 py-8">No departments found</div>
+              ) : (
+                filteredDepartments.map((dept, index) => (
+                  <motion.div
+                    key={dept.id}
+                    className="glass-card p-4 hover:scale-[1.02] transition-transform cursor-pointer rounded-lg"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-bold text-neon-cyan">{dept.name}</h3>
+                        <p className="text-sm text-gray-400 font-mono">{dept.code}</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-gray-400">Classes</div>
+                        <div className="text-2xl font-bold text-neon-purple">{dept.classCount}</div>
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="status-orb-valid"></div>
+                        <span className="text-sm text-gray-400">{dept.studentCount} Students</span>
+                      </div>
+                      <button className="text-neon-cyan hover:text-neon-purple transition-colors text-sm">
+                        View Details →
+                      </button>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}

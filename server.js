@@ -82,6 +82,21 @@ app.get('/api/health', (req, res) => {
  */
 app.get('/api/departments', (req, res) => {
     try {
+        // Serverless mode - return static data
+        if (process.env.VERCEL) {
+            res.json({
+                success: true,
+                data: [{ 
+                    id: 'DEPT001', 
+                    name: 'Computing Department',
+                    status: 'active',
+                    serverlessMode: true 
+                }],
+                count: 1
+            });
+            return;
+        }
+
         const departments = ensureInitialized().getAllDepartments();
         res.json({
             success: true,
@@ -835,6 +850,24 @@ app.get('/api/students/:id/hierarchy', (req, res) => {
  */
 app.get('/api/system/info', (req, res) => {
     try {
+        // For serverless, return static response to avoid timeouts
+        if (process.env.VERCEL) {
+            res.json({
+                success: true,
+                data: {
+                    totalDepartments: 1,
+                    totalClasses: 1,
+                    totalStudents: 1,
+                    activeDepartments: 1,
+                    activeClasses: 1,
+                    activeStudents: 1,
+                    serverlessMode: true,
+                    message: "Blockchain system ready in serverless mode"
+                }
+            });
+            return;
+        }
+
         const manager = ensureInitialized();
         const stats = {
             totalDepartments: manager.getAllDepartments().length,
@@ -888,17 +921,23 @@ app.post('/api/system/initialize', (req, res) => {
 function initializeMinimalData() {
     const manager = getBlockchainManager();
     
-    // Create minimal data for serverless - just 1 of each
+    // For serverless - skip heavy blockchain operations initially
     try {
-        // Only create if doesn't exist
+        // Only create if doesn't exist AND not in serverless
         if (Object.keys(manager.getAllDepartments()).length === 0) {
+            if (process.env.VERCEL) {
+                // In serverless, just create empty structure without mining
+                console.log('Serverless mode - skipping blockchain mining');
+                return;
+            }
+            
             manager.createDepartment('DEPT001', 'Computing');
             const classChain = manager.createClass('CLASS001', 'Sample Class', 'DEPT001');
             manager.createStudent('STU001', 'Sample Student', 'CLASS001');
-            if (!process.env.VERCEL) console.log('Minimal data initialized: 1 dept, 1 class, 1 student');
+            console.log('Minimal data initialized: 1 dept, 1 class, 1 student');
         }
     } catch (error) {
-        if (!process.env.VERCEL) console.log('Minimal initialization error:', error.message);
+        console.log('Minimal initialization error:', error.message);
     }
 }
 
@@ -995,12 +1034,18 @@ if (require.main === module) {
     });
 }
 
-// Catch-all handler: send back the React app in production
-if (process.env.NODE_ENV === 'production') {
+// Catch-all handler: send back the React app in production (only for non-API routes)
+if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client/dist/index.html'));
+    if (!req.path.startsWith('/api')) {
+      res.sendFile(path.join(__dirname, 'client/dist/index.html'));
+    } else {
+      res.status(404).json({ error: 'API endpoint not found' });
+    }
   });
 }
 
-// Export the app for Vercel
-module.exports = app;
+// Export the app for Vercel as a function
+module.exports = (req, res) => {
+    return app(req, res);
+};
